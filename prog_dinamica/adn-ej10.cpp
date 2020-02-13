@@ -4,14 +4,29 @@
 #include <string>
 using namespace std;
 
+/*
+Ejercicio 10 El grado de relación de dos genes se mide en función de hasta qué punto se pueden alinear.
+Para formalizar esta idea, piensa en un gen como en una cadena sobre el alfabeto Σ = {A, C, G, T}.
+Considera dos genes, x = AT GCC e y = T ACGCA. Una alineación de x e y es una forma de
+emparejar estas dos cadenas escribiéndolas en columnas; por ejemplo:
+−AT −GCC
+T A−CGCA
+El guión “−” señala un hueco. Los caracteres de cada cadena deben aparecer en orden y cada
+columna debe contener un carácter de al menos una de las dos cadenas. La puntuación de un
+alineamiento se calcula sumando las puntuaciones de los pares emparejados, utilizando para ello
+una matriz de puntuación P de tamaño 5 × 5, donde la columna y la fila extras se utilizan para
+acomodar los huecos. Por ejemplo, el alineamiento anterior tiene la siguiente puntuación:
+P[−, T] + P[A, A] + P[T, −] + P[−, C] + P[G, G] + P[C, C] + P[C, A]
+Escribir un algoritmo de programación dinámica que, dadas dos cadenas x[1..n] y y[1..m] y una
+matriz de puntuación P devuelva el alineamiento de mayor puntuación.
+*/
+
 const int TAM_ALFA = 5;
 const int N = 5;
 const int M = 7;
 const int x[N] = {3, 3, 2, 0, 1}; //T, T, G, A, C
 const int y[M] = {2, 0, 0, 1, 3, 1, 2}; //G, A, A, C, T, C, G
 const char alfabeto[TAM_ALFA+1] = {'A', 'C', 'G', 'T', '-'};
-
-
 
 /*
     Tabla de puntuaciones {A, C, G, T, -}

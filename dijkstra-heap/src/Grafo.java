@@ -73,11 +73,11 @@ public class Grafo {
 
 
     public void randomGraph(double prob_densidad){
-        Random r = new Random();
+        Random r = new Random(System.currentTimeMillis());
         for(int i = 0; i < N; ++i){
             for(int j = 0; j < N; ++j){
                 if(i != j && r.nextDouble() <= prob_densidad){ 
-                    this.addEdge(i, j, (float)(100*r.nextDouble()));
+                    this.addEdge(i, j, (float)(10000*r.nextDouble()));
                     E++;
                 }
             }
@@ -103,6 +103,11 @@ public class Grafo {
 
 	public int getNAristas() {
 		return this.E;
+	}
+
+	public void setAristas(int cont) {
+		this.E = cont;
+		
 	}
     
 }

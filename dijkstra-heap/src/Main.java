@@ -20,10 +20,10 @@ import org.apache.commons.cli.ParseException;
  * Clase principal del programa
  * 
  * Parsea la linea de comandos y tiene 3 modos de ejecución:
- * - Modo random: crea un grafo aleatorio con un numero de vertices dado y una dispersion dada, 
+ * - Modo random: crea un grafo aleatorio con un numero de vertices dado y una densidad dada, 
  *  y ejecuta Dijkstra sobre él
  * 
- * - Modo para gráficas: crea grafos aleatorios con una dispersión dada, y 
+ * - Modo para gráficas: crea grafos aleatorios con una densidad dada, y 
  *  guarda los tiempos de ejecución de Dijkstra en un archivo
  * 
  * - Modo desde archivo: carga un grafo definido en un archivo y ejecuta Dijkstra sobre él
@@ -56,8 +56,9 @@ public class Main {
         Option help = new Option("h", "help", false, "muestra esta ayuda");
         group.addOption(Option.builder("g")
                 .desc("EJUCUCIÓN PARA GRÁFICAS: \n"
-                        + "Genera archivos de prueba para las gráficas usando grafos aleatorios con"
-                        + " dispersión definida en " + " [-d] y guarda los resultados de tiempo" + "en el archivo [-o]")
+                        + "Genera archivos de prueba para las gráficas usando grafos aleatorios con misma densidad para todos\n"
+                        + "(usando [-d]) o con vértices fijos pero con densidad variable (con [-v]).\n"
+                        + "Los resultados se guardan en un archivo dado en la opción [-o]\n")
 
                 .build());
         group.addOption(Option.builder("i").hasArg().argName("in_file")
@@ -65,7 +66,7 @@ public class Main {
                 .build());
         group.addOption(Option.builder("r").hasArg(false)
                 .desc("EJECUCIÓN RANDOM:\nEjecuta una instacia de Dijkstra sobre un grafo aleatorio con [-v] vertices"
-                        + " y [-d] dispersion")
+                        + " y [-d] densidad")
                 .build());
         group.addOption(help);
         opt.addOptionGroup(group);
@@ -73,8 +74,8 @@ public class Main {
         // Opciones adicionales
         opt.addOption(Option.builder("o").hasArg().argName("out_file")
                 .desc("Guarda los valores de tiempo de las gráficas en out_file").build());
-        opt.addOption(Option.builder("d").longOpt("dispersion").hasArg().argName("disp")
-                .desc("define la dispersión para grafo aleatorios").build());
+        opt.addOption(Option.builder("d").longOpt("densidad").hasArg().argName("disp")
+                .desc("define la densidad para grafo aleatorios").build());
         opt.addOption(Option.builder("v").hasArg().argName("vert")
                 .desc("define el numero de vertices para ejecución random").build());
 
@@ -100,7 +101,7 @@ public class Main {
                     else
                         throw new ParseException("Para opción -g, añadir -d ó -v con -o"); 
                 } catch (NumberFormatException n) {
-                    throw new ParseException("añade un valor correcto de dispersión");
+                    throw new ParseException("añade un valor correcto de densidad\n");
                 }
                 
             }
@@ -109,7 +110,7 @@ public class Main {
              
             
         } 
-        else if(line.hasOption("f")){ //Modo desde archivo
+        else if(line.hasOption("i")){ //Modo desde archivo
             ejecutaArchivo(line.getOptionValue("i"));
         }
         else if(line.hasOption("r")){ //Modo random
@@ -117,7 +118,7 @@ public class Main {
                 try {
                     random(Float.parseFloat(line.getOptionValue("d")), Integer.parseInt(line.getOptionValue("v")));
                 } catch (NumberFormatException n) {
-                    throw new ParseException("añade un valor correcto de dispersión o de vértices");
+                    throw new ParseException("añade un valor correcto de densidad o de vértices");
                 }
             }
             else throw new ParseException("Para opción -r, añadir -d, -v");
@@ -133,13 +134,13 @@ public class Main {
 
     /**
      * Crea un grafo aleatorio, ejecuta Dijkstra, y muestra los resultados.
-     * @param dispersion La dispersion del grafo aleatorio a crear
+     * @param densidad La densidad del grafo aleatorio a crear
      * @param vertices El número de vertices del grafo dado
      */
-    private static void random(Float dispersion, Integer vertices){
+    private static void random(Float densidad, Integer vertices){
         Grafo g = new Grafo(vertices);
-        g.randomGraph(dispersion);
-        System.out.println("Creando grafo con dispersión " + dispersion
+        g.randomGraph(densidad);
+        System.out.println("Creando grafo con densidad " + densidad
                 + vertices + " vertices ...");
     
         Dijkstra dij = new Dijkstra(g);
@@ -164,7 +165,7 @@ public class Main {
             int cont = 0;
 
             Grafo g = new Grafo(N);
-            while((linea = br.readLine()) != null || cont < (N*(N-1))){
+            while((linea = br.readLine()) != null && cont < (N*(N-1))){
                 String tokens[] = linea.split(" ");
 
                 g.addEdge(Integer.parseInt(tokens[0]), 
@@ -172,12 +173,13 @@ public class Main {
                           Float.parseFloat(tokens[2]));
                 cont++;
             }
+            g.setAristas(cont);
 
             Dijkstra dij = new Dijkstra(g);
             System.out.println(g);
             double elapsed = ejecutaDijkstra(dij);
             System.out.println(dij);
-            System.out.println(String.format("Tiempo transcurrido: %3.f milisegundos", elapsed));
+            System.out.println(String.format("Tiempo transcurrido: %.3f milisegundos", elapsed));
             br.close();
             
         } catch (FileNotFoundException e) {
@@ -192,9 +194,9 @@ public class Main {
     /**
      * En este modo, se crean grafos aleatorios con una disperisión dada y se guardan los tiempos de 
      * ejecución de Dijkstra en el archivo de salida dado.
-     * @param entrada dispersion o vertices de los grafos aleatorio
+     * @param entrada densidad o vertices de los grafos aleatorio
      * @param out_file archivo de salida donde se guardaran los tiempos de ejecución
-     * @param modo true si es dispersion fija y vertices variables, y false si es dispersión variable y vertices fijos
+     * @param modo true si es densidad fija y vertices variables, y false si es densidad variable y vertices fijos
      */
     private static void graficas(float entrada, String out_file, boolean modo) {
 
@@ -202,36 +204,38 @@ public class Main {
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter(output));
             float i = 0, init = 0, j = 0, N = 0;
-            if(modo){ //dispersion fija, vertices variables
+            if(modo){ //densidad fija, vertices variables
                 init = 500;
                 j = 500;
-                N = 1000;
-                System.out.println("Creando grafos con dispersión " + entrada
-                        + " de 500 a 10000 vertices ...");
+                N = 8500;
+                System.out.println("Creando grafos con densidad " + entrada
+                        + " de 500 a 8000 vertices ...");
             }
-            else { //dispersion variable, vertices fijos
+            else { //densidad variable, vertices fijos
                 init = 0.1f;
                 j = 0.1f;
                 N = 1f;
-                System.out.println("Creando grafos con dispersión de 0.1 a 1" 
+                System.out.println("Creando grafos con densidad de 0.1 a 1" 
                         + " de " + (int)entrada + " vertices ...");
             }
+            
             for(i = init; i<N; i=i+j){
                 Grafo g = modo ? new Grafo((int) i) : new Grafo((int) entrada);
                 if(modo) g.randomGraph(entrada); else g.randomGraph(i);
                 
                 System.out.print((modo ? "V=" : "D=")+ i + ", ");
-                System.out.println("E=" + g.getNAristas() + ": ");
+                System.out.println("A=" + g.getNAristas() + ": ");
                 
                 double medidaFinal = 0;
                 for(int k = 0; k<3;++k){
-                    System.out.print(k + " ... ");
+                    System.out.print(k+1 + " ... ");
                     medidaFinal += ejecutaDijkstra(new Dijkstra(g));
                 }
                 System.out.println();
                 medidaFinal /= 3;
 
-                bw.write(i + " " + medidaFinal+ "\n");
+                if(modo) bw.write(i + " " + medidaFinal+ "\n");
+                else bw.write(g.getNAristas() + " " + medidaFinal + "\n");
             }
 
             bw.close();

@@ -1,4 +1,4 @@
-import java.util.LinkedList;
+import java.util.HashMap;
 
 /**
  * Clase que define montículos de mínimos
@@ -25,19 +25,24 @@ public class MinHeap{
             return item == null && hijo_iz == null 
             && hijo_der == null && padre == null;
         }
+        
+        public String toString() {
+        	return String.format("(k:%f, v:%d)", prioridad, item);
+        }
     }
 
 
     private Arbol min;
-    private LinkedList<Arbol> posiciones;
+    private HashMap<Integer, Arbol> posiciones;
 
     /**
      * Constructor de un montículo vacío
      * @param N : numero maximos de elementos en el montículo
      */
     public MinHeap(int N){
-        this.posiciones = new LinkedList<>();
-        for(int i = 0; i < N; ++i) this.posiciones.add(null);
+    	int capacity = (int) (N/0.75+1);
+        this.posiciones = new HashMap<>(capacity);
+        for(int i = 0; i < N; ++i) this.posiciones.put(i, null);
         min = null;
     }
 
@@ -52,25 +57,25 @@ public class MinHeap{
         Arbol union = null;
         
 
-        if((t1 == null || t1.vacio()) && (t2 != null && !t2.vacio())){
+        if((t1 == null /*|| t1.vacio()*/) && (t2 != null /*&& !t2.vacio()*/)){
             union = t2;
             union.padre = t2.padre;
         } 
-        else if((t1 != null && !t1.vacio()) && (t2 == null || t2.vacio())){
+        else if((t1 != null /*&& !t1.vacio()*/) && (t2 == null /*|| t2.vacio()*/)){
             union = t1;
             union.padre = t1.padre;
         }
-        else if(t1 == null && t2 == null) union = new Arbol(); //la union es un arbol vacio
+        else if(t1 == null && t2 == null) union = null;//new Arbol(); //la union es un arbol vacio
         else if(t1.prioridad < t2.prioridad){
             
             union = new Arbol();
             union.item = t1.item;
             union.prioridad = t1.prioridad;
             
-            union.hijo_der = (t1.hijo_iz != null) ? t1.hijo_iz : new Arbol();
+            union.hijo_der = (t1.hijo_iz != null) ? t1.hijo_iz : null;//new Arbol();
             
             union.hijo_iz = (t1.hijo_der != null) ? this.unir(t1.hijo_der, t2) 
-                                    : this.unir(new Arbol(), t2);
+                                 : t2 ; //this.unir(new Arbol(), t2);
             
             union.padre = t1.padre; 
         }
@@ -79,23 +84,25 @@ public class MinHeap{
             union.item = t2.item;
             union.prioridad = t2.prioridad;
             
-            union.hijo_der = (t2.hijo_iz != null) ? t2.hijo_iz : new Arbol();
+            union.hijo_der = (t2.hijo_iz != null) ? t2.hijo_iz : null;//new Arbol();
             
             union.hijo_iz = (t2.hijo_der != null) ? this.unir(t2.hijo_der, t1) 
-                                    : this.unir(new Arbol(), t1);
+                                    : t1; //this.unir(new Arbol(), t1);
             union.padre = t2.padre;  
         }
-        else union = new Arbol();
+        else union = null; //new Arbol();
 
-        if(!union.vacio()) this.actualizaPosiciones(union);
-        if(union.hijo_iz != null && !union.hijo_iz.vacio()) union.hijo_iz.padre = union;
-        if(union.hijo_der != null && !union.hijo_der.vacio()) union.hijo_der.padre = union;
+        if(/*!union.vacio()*/ union != null) this.actualizaPosiciones(union);
+        if(union.hijo_iz != null /*&& !union.hijo_iz.vacio()*/) union.hijo_iz.padre = union;
+        if(union.hijo_der != null /*&& !union.hijo_der.vacio()*/) union.hijo_der.padre = union;
 
         return union;
     }
 
     private void actualizaPosiciones(Arbol t){
-        if(t.item < this.posiciones.size())
+        
+    	/*
+    	if(t.item < this.posiciones.size())
             this.posiciones.remove((int) t.item); 
         this.posiciones.add(t.item, t);
     
@@ -110,6 +117,12 @@ public class MinHeap{
                 this.posiciones.remove((int) t.hijo_iz.item); 
             this.posiciones.add(t.hijo_iz.item, t.hijo_iz);
         }
+        
+        */
+    	
+    	this.posiciones.put(t.item, t);
+    	if(t.hijo_der != null) this.posiciones.put(t.hijo_der.item, t.hijo_der);
+    	if(t.hijo_iz != null) this.posiciones.put(t.hijo_iz.item, t.hijo_iz);
     }
 
     /**
@@ -137,8 +150,9 @@ public class MinHeap{
      */
     public void borrar(){
         int posicion_borrada = min.item;
-        this.posiciones.remove(posicion_borrada);
-        this.posiciones.add(posicion_borrada, null);
+        //this.posiciones.remove(posicion_borrada);
+        //this.posiciones.add(posicion_borrada, null);
+        this.posiciones.put(posicion_borrada, null);
         this.min = this.unir(min.hijo_iz, min.hijo_der);
     }
 
@@ -157,10 +171,10 @@ public class MinHeap{
         if(arbol_a_cambiar != null){
             arbol_a_cambiar.item = item;
             arbol_a_cambiar.prioridad = newKey;
-            arbol_a_cambiar.padre = null;
-
+            
             Arbol padre = arbol_a_cambiar.padre;
             //Cortamos
+            arbol_a_cambiar.padre = null;
             if(padre != null){ // arbol_a_cambiar no es el minimo
                 if(padre.hijo_iz == arbol_a_cambiar) padre.hijo_iz = null;
                 else if(padre.hijo_der == arbol_a_cambiar) padre.hijo_der = null;
@@ -191,5 +205,9 @@ public class MinHeap{
      */
     public Integer peek(){
         return min.item;
+    }
+    
+    public String toString() {
+    	return this.min.toString();
     }
 }
